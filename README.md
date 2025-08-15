@@ -184,66 +184,7 @@ Working Student @ SAP ERP PCX
 
 This project is licensed under the MIT License. See [`LICENSE`](LICENSE) for details.
 
-````
+```
 
----
 
-### Suggested `.gitignore` (recap)
-
-```bash
-cat > .gitignore << 'EOF'
-# Nextflow runtime
-work/
-.nextflow*
-.cache/
-*timeline*.html
-*trace*.txt
-*report*.html
-dag.png
-
-# Outputs (code-only repo)
-results*/
-**/inputs/
-**/results/
-**/final/
-
-# Data files
-*.h5ad
-*.h5
-*.loom
-*.mtx
-*.npz
-*.npy
-*.rds
-
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
-venv/
-.ipynb_checkpoints/
-
-# R
-.Rhistory
-.Rproj.user/
-.RData
-.Ruserdata
-
-# OS / Editor
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-.vscode/
-.idea/
-
-# Archives
-*.zip
-*.tar
-*.tar.gz
-*.tgz
-EOF
-````
-
-Want me to also generate a tiny `LICENSE` (MIT) and a `CHANGELOG.md` skeleton to round out the repo?
+```
