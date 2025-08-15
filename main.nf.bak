@@ -1,0 +1,90 @@
+nextflow.enable.dsl=2
+
+// Defaults
+params.in_h5ad  = params.in_h5ad  ?: "$baseDir/filtered_placeholder.h5ad"
+params.outdir   = params.outdir   ?: "$baseDir/results_scribe"
+params.threads  = params.threads  ?: 4
+params.seed     = params.seed     ?: 42
+
+workflow {
+    Channel
+      .fromPath(params.in_h5ad)
+      .set { h5ad_ch }
+
+    converted = convert_h5ad_to_scribe(h5ad_ch)
+    scribe_run = run_scribe(converted)
+    aggregate_edges(scribe_run)
+}
+
+process convert_h5ad_to_scribe {
+    tag "h5ad→SCRIBE inputs"
+    publishDir "${params.outdir}/inputs", mode: 'copy'
+    cpus 1
+    debug true
+
+    input:
+    path h5ad
+
+    output:
+    tuple path("expr.csv"), path("genes.txt"), path("pseudotime.csv")
+
+    script:
+    """
+    python ${projectDir}/modules/grn/scribe/h5ad_to_scribe_inputs.py \
+      --h5ad ${h5ad} \
+      --expr expr.csv \
+      --genes genes.txt \
+      --pseudotime pseudotime.csv
+    """
+}
+
+
+
+process run_scribe {
+  tag "SCRIBE core (R)"
+  publishDir "${params.outdir}/raw", mode: 'copy'
+  cpus params.threads
+  debug true
+
+  input:
+  tuple path("expr.csv"), path("genes.txt"), path("pseudotime.csv")
+
+  output:
+  tuple path("edges.tsv"), path("A_averaged.tsv")
+
+  script:
+  """
+  Rscript ${projectDir}/modules/grn/scribe/run_scribe.R \
+    --expr expr.csv \
+    --genes genes.txt \
+    --pseudotime pseudotime.csv \
+    --threads ${task.cpus} \
+    --seed ${params.seed} \
+    --edges edges.tsv
+
+  Rscript ${projectDir}/modules/grn/scribe/averageA.R \
+    --edges edges.tsv \
+    --out A_averaged.tsv
+  """
+}
+
+process aggregate_edges {
+  tag "Aggregate & rank"
+  publishDir "${params.outdir}/final", mode: 'copy'
+  cpus 1
+  debug true
+
+  input:
+  tuple path("edges.tsv"), path("A_averaged.tsv")
+
+  output:
+  path "scribe_ranked_edges.tsv"
+
+  script:
+  """
+  python ${projectDir}/modules/grn/scribe/aggregate_edges.py \
+    --in edges.tsv \
+    --avg A_averaged.tsv \
+    --out scribe_ranked_edges.tsv
+  """
+}
